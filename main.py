@@ -8,6 +8,10 @@ def pGreen(string):
     """Fancy - prints text in green""" 
     print("\033[92m {}\033[00m" .format(string))
 
+def ceil_div(n, d):
+    """Return the ceiling of n/d for integers n and d."""
+    return -(-n // d)
+
 def gcd(a:int, b:int) -> int:
     """
     Given two integers returns the integer
@@ -115,6 +119,80 @@ def general_solution(a:int, b:int, c:int, invert_solution=False, prnt=False) -> 
 
     if prnt:
         print("General Solutions are: ")
-        pGreen(f"x = {x0} + {xm}t, y = {y0} {ym}t")
+        pGreen(f"x = {x0:+d} {xm:+d}t, y = {y0:+d} {ym:+d}t")
     
     return [(x0, -xm), (y0, -ym)] if invert_solution else [(x0, xm), (y0, ym)]
+
+def get_natural_solutions(a:int, b:int, c:int, x_gen:tuple, y_gen:tuple, limit=1000, all=False) -> list:
+    """For a diophantine equation if there exists one 
+    integer solution then there are infinite of them.
+
+    But sometimes we are interested in only few of them,
+    like all solutions (x, y) that contain natural numbers only.
+
+    This function returns all solutions (x, y) such that both
+    x and y belong to natural numbers.
+
+    This function doesn't return solutions beyond `N^2` like (0, 1)
+
+    Arguments
+    - `x_gen`: tuple containing general solution for x as (x0, xm)
+    - `y_gen`: tuple containing general solution for y as (y0, ym)
+    - `limit` (keyword): The number of solutions you need
+    - `all` (keyword): (default:False) If set to True you may put strain on
+    hardware; use cautiously
+    """
+    if a + b == c:
+        #Trivial Case: only one solution
+        pGreen("Only one natural number solution !")
+        return [(1, 1)]
+    
+    x0, xm = x_gen
+    y0, ym = y_gen
+
+    # Compute t bounds for x:
+    if xm > 0:
+        t_lower_x = ceil_div(1 - x0, xm)
+        t_upper_x = float('inf')
+    elif xm < 0:
+        t_lower_x = -float('inf')
+        t_upper_x = (x0 - 1) // abs(xm)
+    else:
+        t_lower_x = -float('inf')
+        t_upper_x = float('inf')
+    
+    # Compute t bounds for y:
+    if ym > 0:
+        t_lower_y = ceil_div(1 - y0, ym)
+        t_upper_y = float('inf')
+    elif ym < 0:
+        t_lower_y = -float('inf')
+        t_upper_y = (y0 - 1) // abs(ym)
+    else:
+        t_lower_y = -float('inf')
+        t_upper_y = float('inf')
+    
+    t_lower = max(t_lower_x, t_lower_y)
+    t_upper = min(t_upper_x, t_upper_y)
+    
+    solutions = []
+    
+    if t_lower == -float('inf') or t_upper == float('inf'):
+        t = t_lower if t_lower != -float('inf') else 0
+        while len(solutions) < limit:
+            x = x0 + xm * t
+            y = y0 + ym * t
+            if x > 0 and y > 0:
+                solutions.append((x, y))
+            t += 1
+    else:
+        for t in range(t_lower, t_upper + 1):
+            x = x0 + xm * t
+            y = y0 + ym * t
+            if x > 0 and y > 0:
+                solutions.append((x, y))
+                if not all and len(solutions) >= limit:
+                    break
+
+    return solutions
+
